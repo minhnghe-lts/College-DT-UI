@@ -11,4 +11,9 @@ export default [
     to: { name: 'second-page' },
     icon: { icon: 'tabler-file' },
   },
+  {
+    title: 'Phỏng Vấn',
+    to: { name: 'interview-page' },
+    icon: { icon: 'tabler-file' },
+  },
 ] as VerticalNavItems
