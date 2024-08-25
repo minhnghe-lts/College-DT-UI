@@ -1,10 +1,18 @@
 <script setup lang="ts">
+import {
+  Candidate,
+  Interview,
+  InterviewResult,
+  MeetingRoom,
+} from "@/models/interview";
+import { CalendarOptions } from "@fullcalendar/core";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import resourceList from "@fullcalendar/list";
 import resourceTimeGridPlugin from "@fullcalendar/resource-timegrid";
 import FullCalendar from "@fullcalendar/vue3";
-import { ref } from "vue";
+import axios from "axios";
+import { onMounted, ref } from "vue";
 import {
   VBtn,
   VCard,
@@ -15,302 +23,179 @@ import {
   VTextField,
 } from "vuetify/components";
 
-interface Interview {
-  id?: string;
-  isDeleted?: boolean;
-  name?: string;
-  candidateId?: number;
-  result?: InterviewResult;
-  resultDescription?: string;
-  fromTime: Date;
-  toTime: Date;
-  meetingRoomId: number;
-  onBoardDate?: Date;
-}
+const interviews = ref<Interview[]>([]);
+const candidates = ref<Candidate[]>([]);
+const meetingRooms = ref<MeetingRoom[]>([]);
+const isDialogOpen = ref(false);
 
-interface Candidate {
-  id: number;
-  name: string;
-}
+const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null);
 
-enum InterviewResult {
-  Waiting = "Waiting",
-  Passed = "Passed",
-  Failed = "Failed",
-  Pending = "Pending",
-}
+const fetchData = async () => {
+  try {
+    const [candidatesResponse, interviewsResponse, meetingRoomsResponse] =
+      await Promise.all([
+        axios.get<Candidate[]>("https://localhost:7106/api/candidate"),
+        axios.get<Interview[]>("https://localhost:7106/inteview"),
+        axios.get<MeetingRoom[]>("https://localhost:7106/meetingRooms"),
+      ]);
 
-const today = new Date();
+    candidates.value = candidatesResponse.data;
+    interviews.value = interviewsResponse.data || [];
+    meetingRooms.value = meetingRoomsResponse.data || [];
 
-const interviews = ref<Interview[]>([
-  {
-    id: "1",
-    name: "Phỏng vấn 1",
-    candidateId: 1,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      8
-    ),
-    result: InterviewResult.Waiting,
-    resultDescription: "Ứng viên đang chờ kết quả",
-    toTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9),
-    meetingRoomId: 1,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "2",
-    name: "Phỏng vấn 2",
-    candidateId: 2,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      9
-    ),
-    result: InterviewResult.Passed,
-    resultDescription: "Ứng viên đã vượt qua phỏng vấn",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      10
-    ),
-    meetingRoomId: 2,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "3",
-    name: "Phỏng vấn 3",
-    candidateId: 3,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      10
-    ),
-    result: InterviewResult.Failed,
-    resultDescription: "Ứng viên không đạt yêu cầu",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      11
-    ),
-    meetingRoomId: 3,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "4",
-    name: "Phỏng vấn 4",
-    candidateId: 4,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      11
-    ),
-    result: InterviewResult.Pending,
-    resultDescription: "Chờ quyết định từ phía nhà tuyển dụng",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      12
-    ),
-    meetingRoomId: 4,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "5",
-    name: "Phỏng vấn 5",
-    candidateId: 5,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      12
-    ),
-    result: InterviewResult.Waiting,
-    resultDescription: "Ứng viên đang chờ kết quả",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      13
-    ),
-    meetingRoomId: 5,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "6",
-    name: "Phỏng vấn 6",
-    candidateId: 6,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      13
-    ),
-    result: InterviewResult.Passed,
-    resultDescription: "Ứng viên đã vượt qua phỏng vấn",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      14
-    ),
-    meetingRoomId: 6,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "7",
-    name: "Phỏng vấn 7",
-    candidateId: 7,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      14
-    ),
-    result: InterviewResult.Waiting,
-    resultDescription: "Ứng viên đang chờ kết quả",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      15
-    ),
-    meetingRoomId: 7,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "8",
-    name: "Phỏng vấn 8",
-    candidateId: 8,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      15
-    ),
-    result: InterviewResult.Pending,
-    resultDescription: "Chờ quyết định từ phía nhà tuyển dụng",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      16
-    ),
-    meetingRoomId: 8,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "9",
-    name: "Phỏng vấn 9",
-    candidateId: 9,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      15
-    ),
-    result: InterviewResult.Pending,
-    resultDescription: "Chờ quyết định từ phía nhà tuyển dụng",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      16
-    ),
-    meetingRoomId: 6,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "10",
-    name: "Phỏng vấn 10",
-    candidateId: 10,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      16
-    ),
-    result: InterviewResult.Pending,
-    resultDescription: "Chờ quyết định từ phía nhà tuyển dụng",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      17
-    ),
-    meetingRoomId: 5,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "11",
-    name: "Phỏng vấn 11",
-    candidateId: 11,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      17
-    ),
-    result: InterviewResult.Pending,
-    resultDescription: "Chờ quyết định từ phía nhà tuyển dụng",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      18
-    ),
-    meetingRoomId: 4,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-  {
-    id: "11",
-    name: "Phỏng vấn 11",
-    candidateId: 11,
-    fromTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      18
-    ),
-    result: InterviewResult.Pending,
-    resultDescription: "Chờ quyết định từ phía nhà tuyển dụng",
-    toTime: new Date(
-      today.getFullYear(),
-      today.getMonth(),
-      today.getDate(),
-      19
-    ),
-    meetingRoomId: 3,
-    onBoardDate: today,
-    isDeleted: false,
-  },
-]);
+    updateCalendarEvents();
+    updateCalendarResources();
+  } catch (error) {
+    console.error("Failed to fetch data:", error);
+  }
+};
 
-const candidates = ref<Candidate[]>([
-  { id: 1, name: "Ứng viên A" },
-  { id: 2, name: "Ứng viên B" },
-  { id: 3, name: "Ứng viên C" },
-]);
+const openDialog = (info: any) => {
+  const interview = findInterviewById(info.event.id);
+  if (interview) {
+    selectedInterview.value = interview;
+    isDialogOpen.value = true;
+  }
+};
 
-const calendarOptions = ref({
+const createNewInterview = (info: any) => {
+  selectedInterview.value = {
+    ...getEmptyInterview(),
+    fromTime: info.date,
+    toTime: new Date(info.date.getTime() + 60 * 60 * 1000),
+    meetingRoomId: parseInt(info.resource.id),
+  };
+  isDialogOpen.value = true;
+};
+
+const saveInterview = async () => {
+  try {
+    if (selectedInterview.value.id && !isNaN(selectedInterview.value.id)) {
+      await axios.put(
+        `https://localhost:7106/inteview/${selectedInterview.value.id}`,
+        selectedInterview.value
+      );
+      updateEventInCalendar(selectedInterview.value);
+    } else {
+      const response = await axios.post(
+        "https://localhost:7106/inteview",
+        selectedInterview.value
+      );
+      addEventToCalendar(response.data);
+    }
+  } catch (error) {
+    console.error("Failed to save interview:", error);
+  } finally {
+    isDialogOpen.value = false;
+    resetSelectedInterview();
+  }
+};
+
+const deleteInterview = async () => {
+  try {
+    if (selectedInterview.value.id && !isNaN(selectedInterview.value.id)) {
+      await axios.delete(
+        `https://localhost:7106/inteview/${selectedInterview.value.id}`
+      );
+      removeEventFromCalendar(selectedInterview.value.id);
+    }
+  } catch (error) {
+    console.error("Failed to delete interview:", error);
+  } finally {
+    isDialogOpen.value = false;
+    resetSelectedInterview();
+  }
+};
+
+// Utility Functions
+const getEmptyInterview = (): Interview => ({
+  id: NaN,
+  isDeleted: false,
+  name: "",
+  result: InterviewResult.Waiting,
+  resultDescription: "",
+  fromTime: new Date(),
+  toTime: new Date(),
+  meetingRoomId: 0,
+  onBoardDate: new Date(),
+});
+
+const findInterviewById = (id: number) =>
+  interviews.value.find((c) => c.id == id);
+
+const handleEventDragStart = (info: any) => {
+  const interview = findInterviewById(info.event.id);
+  if (interview) selectedInterview.value = interview;
+};
+
+const handleEventDropResize = (info: any) => {
+  selectedInterview.value = {
+    ...selectedInterview.value,
+    fromTime: info.event.start,
+    toTime: info.event.end,
+    meetingRoomId: info.event.getResources()[0].id,
+  };
+  saveInterview();
+};
+
+const updateCalendarEvents = () => {
+  calendarOptions.value.events = interviews.value.map((interview) => ({
+    id: interview.id.toString(),
+    title: interview.name,
+    start: interview.fromTime,
+    end: interview.toTime,
+    resourceId: interview.meetingRoomId.toString(),
+  }));
+};
+
+const updateCalendarResources = () => {
+  calendarOptions.value.resources = meetingRooms.value.map((room) => ({
+    id: room.id.toString(),
+    title: room.name,
+  }));
+};
+
+const addEventToCalendar = (newInterview: Interview) => {
+  const calendarApi = calendarRef.value?.getApi();
+  calendarApi?.addEvent({
+    id: newInterview.id.toString(),
+    title: newInterview.name,
+    start: newInterview.fromTime,
+    end: newInterview.toTime,
+    resourceId: newInterview.meetingRoomId.toString(),
+    extendedProps: { ...newInterview },
+  });
+};
+
+const removeEventFromCalendar = (id: number) => {
+  const calendarApi = calendarRef.value?.getApi();
+  calendarApi?.getEventById(id.toString())?.remove();
+};
+
+const updateEventInCalendar = (updatedInterview: Interview) => {
+  const calendarApi = calendarRef.value?.getApi();
+  const event = calendarApi?.getEventById(updatedInterview.id.toString());
+  if (event) {
+    event.setProp("title", updatedInterview.name);
+    event.setStart(updatedInterview.fromTime);
+    event.setEnd(updatedInterview.toTime);
+    event.setExtendedProp(
+      "resourceId",
+      updatedInterview.meetingRoomId.toString()
+    );
+    Object.entries(updatedInterview).forEach(([key, value]) => {
+      event.setExtendedProp(key, value);
+    });
+  }
+};
+
+const resetSelectedInterview = () => {
+  selectedInterview.value = getEmptyInterview();
+};
+
+const selectedInterview = ref<Interview>(getEmptyInterview());
+
+const calendarOptions = ref<CalendarOptions>({
   plugins: [
     resourceTimeGridPlugin,
     interactionPlugin,
@@ -326,31 +211,9 @@ const calendarOptions = ref({
     center: "title",
     right: "dayGridMonth,timeGridWeek,resourceTimeGridDay,list",
   },
-  events: interviews.value.map((interview) => ({
-    id: interview.id,
-    title: interview.name,
-    start: interview.fromTime,
-    end: interview.toTime,
-    resourceId: interview.meetingRoomId,
-    extendedProps: {
-      candidateId: interview.candidateId,
-      result: interview.result,
-      resultDescription: interview.resultDescription,
-      onBoardDate: interview.onBoardDate,
-      isDeleted: interview.isDeleted,
-    },
-  })),
-  resources: [
-    { id: "1", title: "Phòng 1" },
-    { id: "2", title: "Phòng 2" },
-    { id: "3", title: "Phòng 3" },
-    { id: "4", title: "Phòng 4" },
-    { id: "5", title: "Phòng 5" },
-    { id: "6", title: "Phòng 6" },
-    { id: "7", title: "Phòng 7" },
-  ],
   slotMinTime: "08:00:00",
   slotMaxTime: "19:00:00",
+  timeZone: "Asia/Ho_Chi_Minh",
   buttonText: {
     prev: "<",
     next: ">",
@@ -361,8 +224,8 @@ const calendarOptions = ref({
     list: "Danh Sách",
   },
   buttonHints: {
-    prev: "Hôm Trước",
-    next: "Hôm Sau",
+    prev: "<",
+    next: ">",
     today: "Hôm Nay",
     resourceTimeGridDay: "Ngày",
     dayGridMonth: "Tháng",
@@ -372,120 +235,20 @@ const calendarOptions = ref({
   contentHeight: "auto",
   allDaySlot: false,
   expandRows: true,
-  eventClick: (info: any) => {
-    selectedInterview.value = {
-      ...info.event.extendedProps,
-      name: info.event.title,
-      id: info.event.id,
-      fromTime: info.event.start,
-      toTime: info.event.end,
-      meetingRoomId: parseInt(info.event.getResources()[0]?.id ?? "0"),
-    };
-    isDialogOpen.value = true;
-  },
-  dateClick: (info: any) => {
-    const startTime = info.date;
-    const endTime = new Date(startTime.getTime() + 60 * 60 * 1000);
-
-    selectedInterview.value = {
-      id: "",
-      isDeleted: false,
-      name: "",
-      result: InterviewResult.Waiting,
-      resultDescription: "",
-      fromTime: startTime,
-      toTime: endTime,
-      meetingRoomId: parseInt(info.resource.id),
-      onBoardDate: new Date(),
-    };
-    isDialogOpen.value = true;
-  },
+  eventDragStart: handleEventDragStart,
+  eventDrop: handleEventDropResize,
+  eventResizeStart: handleEventDragStart,
+  eventResize: handleEventDropResize,
+  eventClick: openDialog,
+  dateClick: createNewInterview,
 });
 
-const calendarRef = ref<InstanceType<typeof FullCalendar> | null>(null);
-const isDialogOpen = ref(false);
+onMounted(fetchData);
 
-const selectedInterview = ref<Interview>({
-  id: "",
-  isDeleted: false,
-  name: "",
-  result: InterviewResult.Waiting,
-  resultDescription: "",
-  fromTime: new Date(),
-  toTime: new Date(),
-  meetingRoomId: 0,
-  onBoardDate: new Date(),
-});
-
-const saveInterview = () => {
-  const calendarApi = calendarRef.value?.getApi();
-
-  if (calendarApi) {
-    if (selectedInterview.value?.id) {
-      const event = calendarApi.getEventById(selectedInterview.value.id);
-      if (event) {
-        event.setProp("title", selectedInterview.value.name);
-        event.setStart(selectedInterview.value.fromTime);
-        event.setEnd(selectedInterview.value.toTime);
-        event.setExtendedProp(
-          "candidateId",
-          selectedInterview.value.candidateId
-        );
-        event.setExtendedProp("result", selectedInterview.value.result);
-        event.setExtendedProp(
-          "resultDescription",
-          selectedInterview.value.resultDescription
-        );
-        event.setExtendedProp(
-          "onBoardDate",
-          selectedInterview.value.onBoardDate
-        );
-      }
-    } else {
-      calendarApi.addEvent({
-        id: new Date().getTime().toString(),
-        title: selectedInterview.value?.name,
-        start: selectedInterview.value?.fromTime,
-        end: selectedInterview.value?.toTime,
-        resourceId: selectedInterview.value?.meetingRoomId.toString(),
-        extendedProps: {
-          candidateId: selectedInterview.value?.candidateId,
-          result: selectedInterview.value?.result,
-          resultDescription: selectedInterview.value?.resultDescription,
-          onBoardDate: selectedInterview.value?.onBoardDate,
-        },
-      });
-    }
-  }
-
-  isDialogOpen.value = false;
-  resetSelectedInterview();
-};
-
-const deleteInterview = () => {
-  const calendarApi = calendarRef.value?.getApi();
-
-  if (selectedInterview.value?.id && calendarApi) {
-    const event = calendarApi.getEventById(selectedInterview.value.id);
-    if (event) event.remove();
-  }
-  isDialogOpen.value = false;
-  resetSelectedInterview();
-};
-
-const resetSelectedInterview = () => {
-  selectedInterview.value = {
-    id: "",
-    isDeleted: false,
-    name: "",
-    result: InterviewResult.Waiting,
-    resultDescription: "",
-    fromTime: new Date(),
-    toTime: new Date(),
-    meetingRoomId: 0,
-    onBoardDate: new Date(),
-  };
-};
+const interviewOptions = Object.values(InterviewResult).map((value, index) => ({
+  index,
+  value,
+}));
 </script>
 
 <template>
@@ -496,7 +259,11 @@ const resetSelectedInterview = () => {
       </VCardText>
     </VCard>
 
-    <VDialog v-model="isDialogOpen" max-width="600px">
+    <VDialog
+      v-model="isDialogOpen"
+      max-width="600px"
+      @click:outside="resetSelectedInterview"
+    >
       <VCard>
         <VCardText style="font-weight: bold">Lịch Phỏng Vấn</VCardText>
         <VCardText style="display: flex; flex-direction: column; gap: 1rem">
@@ -508,35 +275,28 @@ const resetSelectedInterview = () => {
             v-model="selectedInterview.candidateId"
             :items="candidates"
             item-value="id"
-            item-title="name"
+            item-title="fullName"
             label="Chọn ứng viên"
           />
           <VSelect
             v-model="selectedInterview.result"
-            :items="Object.values(InterviewResult)"
+            :items="interviewOptions"
+            item-value="index"
+            item-title="value"
             label="Kết quả phỏng vấn"
           />
           <VTextField
             v-model="selectedInterview.resultDescription"
-            label="Mô tả kết quả"
+            label="Mô tả kết quả phỏng vấn"
           />
         </VCardText>
+
         <VCardActions>
-          <VBtn
-            size="small"
-            variant="elevated"
-            color="primary"
-            @click="saveInterview"
-          >
-            Lưu
-          </VBtn>
-          <VBtn
-            size="small"
-            variant="elevated"
-            color="error"
-            @click="deleteInterview"
-          >
+          <VBtn variant="outlined" color="error" @click="deleteInterview">
             Xóa
+          </VBtn>
+          <VBtn variant="elevated" color="primary" @click="saveInterview">
+            Lưu
           </VBtn>
         </VCardActions>
       </VCard>
